@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useFormik } from "formik";
 import { useNavigate } from "react-router-dom";
 import * as Yup from "yup";
@@ -9,9 +9,11 @@ import {
   FaRegCommentDots,
   FaWallet,
 } from "react-icons/fa";
+import { useDispatch } from "react-redux";
 import { listCategoriesAPI } from "../../services/category/categoryService";
 import { addTransactionAPI } from "../../services/transactions/transactionService";
 import AlertMessage from "../Alert/AlertMessage";
+import { addTransaction } from "../../redux/slice/transactionSlice";
 
 const validationSchema = Yup.object({
   type: Yup.string()
@@ -26,10 +28,10 @@ const validationSchema = Yup.object({
 });
 
 const TransactionForm = () => {
-  //Navigate
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  // Mutation
+  // Mutation for adding a transaction
   const {
     mutateAsync,
     isPending,
@@ -40,8 +42,9 @@ const TransactionForm = () => {
     mutationFn: addTransactionAPI,
     mutationKey: ["add-transaction"],
   });
-  //fetching
-  const { data, isError, isLoading, isFetched, error, refetch } = useQuery({
+
+  // Fetch categories for the select dropdown
+  const { data, isError, isLoading, error } = useQuery({
     queryFn: listCategoriesAPI,
     queryKey: ["list-categories"],
   });
@@ -55,10 +58,12 @@ const TransactionForm = () => {
       description: "",
     },
     validationSchema,
-    onSubmit: (values) => {
+    onSubmit: (values, { resetForm }) => {
       mutateAsync(values)
         .then((data) => {
-          console.log(data);
+          dispatch(addTransaction(data));
+          resetForm();
+          navigate("/dashboard");
         })
         .catch((e) => console.log(e));
     },
@@ -75,7 +80,6 @@ const TransactionForm = () => {
         </h2>
         <p className="text-gray-600">Fill in the details below.</p>
       </div>
-      {/* Display alert message */}
 
       {isError && (
         <AlertMessage
@@ -89,6 +93,7 @@ const TransactionForm = () => {
       {isSuccess && (
         <AlertMessage type="success" message="Transaction added successfully" />
       )}
+
       {/* Transaction Type Field */}
       <div className="space-y-2">
         <label
@@ -142,13 +147,11 @@ const TransactionForm = () => {
           className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
         >
           <option value="">Select a category</option>
-          {data?.map((category) => {
-            return (
-              <option key={category?._id} value={category?.name}>
-                {category?.name}
-              </option>
-            );
-          })}
+          {data?.map((category) => (
+            <option key={category?._id} value={category?.name}>
+              {category?.name}
+            </option>
+          ))}
         </select>
         {formik.touched.category && formik.errors.category && (
           <p className="text-red-500 text-xs italic">

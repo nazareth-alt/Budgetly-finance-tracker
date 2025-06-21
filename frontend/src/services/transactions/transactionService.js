@@ -27,7 +27,17 @@ export const addTransactionAPI = async ({
       },
     }
   );
+
   //Return a promise
+  return response.data;
+};
+export const fetchTransactionsAPI = async () => {
+  const token = getUserFromStorage();
+  const response = await axios.get(`${BASE_URL}/transactions/lists`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return response.data;
 };
 //! update
