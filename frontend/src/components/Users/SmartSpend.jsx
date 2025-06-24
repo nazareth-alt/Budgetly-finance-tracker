@@ -138,8 +138,8 @@ const SmartSpend = () => {
 
       {/* Summary */}
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-gray-50 p-4 rounded shadow">
-          <h2 className="font-semibold text-gray-800 mb-2">💰 Financial Summary</h2>
+        <div className="bg-gray-50 p-4 rounded shadow dark:bg-gray-800 dark:text-white">
+          <h2 className="font-semibold text-gray-800 mb-2 dark:bg-gray-800 dark:text-white">💰 Financial Summary</h2>
           <p>Income: <span className="text-green-600">R{totalIncome.toFixed(2)}</span></p>
           <p>Expenses: <span className="text-red-500">R{totalExpense.toFixed(2)}</span></p>
           <p className="font-bold">Balance: R{balance.toFixed(2)}</p>
