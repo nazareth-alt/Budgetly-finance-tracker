@@ -11,7 +11,7 @@ const isAuthenticated = async (req, res, next) => {
     }
 
     // ✅ Decode token
-    const decoded = jwt.verify(token, "nazaKey");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // ✅ Fetch full user from DB
     const user = await User.findById(decoded.id);
