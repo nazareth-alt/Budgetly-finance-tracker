@@ -27,7 +27,12 @@ app.use("/", userRouter);
 app.use("/", categoryRouter);
 app.use("/", transactionRouter);
 app.use("/", investmentTipsRouter);
-app.use("/api/v1/goals", goalsRouter); // ✅ Mount the goals route
+app.use("/api/v1/goals", goalsRouter);
+
+app.get("/", (req, res) => {
+  res.send("Budgetly Backend API is running");
+});
+// ✅ Mount the goals route
 
 // Error handling
 app.use(errorHandler);
