@@ -1,149 +1,175 @@
-import React, { useEffect } from "react";
-import { useFormik } from "formik";
-import * as Yup from "yup";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { FaUser, FaEnvelope, FaLock } from "react-icons/fa";
 import { registerAPI } from "../../services/users/userService";
 import AlertMessage from "../Alert/AlertMessage";
 
-//Validations
-const validationSchema = Yup.object({
-  username: Yup.string().required("Username is required"),
-  email: Yup.string()
-    .email("Invalid email address")
-    .required("Email is required"),
-  password: Yup.string()
-    .min(6, "Password must be at least 6 characters long")
-    .required("Password is required"),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref("password"), null], "Passwords must match")
-    .required("Confirming your password is required"),
-});
 const RegistrationForm = () => {
-  //Navigate
   const navigate = useNavigate();
-  // Mutation
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
   const { mutateAsync, isPending, isError, error, isSuccess } = useMutation({
     mutationFn: registerAPI,
     mutationKey: ["register"],
   });
-  const formik = useFormik({
-    initialValues: {
-      email: "",
-      password: "",
-      username: "",
-      confirmPassword: "", 
-    },
-    // Validations
-    validationSchema,
-    //Submit
-    onSubmit: (values) => {
-      console.log(values);
-      //http request
-      mutateAsync(values)
-        .then((data) => {
-          console.log(data);
-        })
-        .catch((e) => console.log(e));
-    },
-  });
-  //Redirect
+
+  const validate = () => {
+    const errs = {};
+    if (!formData.username.trim()) errs.username = "Username is required";
+    if (!formData.email) {
+      errs.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errs.email = "Invalid email address";
+    }
+    if (!formData.password) {
+      errs.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      errs.password = "Password must be at least 6 characters long";
+    }
+    if (!formData.confirmPassword) {
+      errs.confirmPassword = "Confirming your password is required";
+    } else if (formData.confirmPassword !== formData.password) {
+      errs.confirmPassword = "Passwords must match";
+    }
+    return errs;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
+    try {
+      await mutateAsync(formData);
+    } catch (e) {
+      console.error("Registration failed:", e);
+    }
+  };
+
   useEffect(() => {
-    setTimeout(() => {
-      if (isSuccess) {
+    if (isSuccess) {
+      const timer = setTimeout(() => {
         navigate("/login");
-      }
-    }, 3000);
-  }, [isPending, isError, error, isSuccess]);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isSuccess, navigate]);
+
   return (
     <form
-      onSubmit={formik.handleSubmit}
+      onSubmit={handleSubmit}
       className="max-w-md mx-auto my-10 bg-white p-6 rounded-xl shadow-lg space-y-6 border border-gray-200"
     >
       <h2 className="text-3xl font-semibold text-center text-gray-800">
         Sign Up
       </h2>
-      {/* Display messages */}
-      {isPending && <AlertMessage type="loading" message="Loading...." />}
+
+      {isPending && <AlertMessage type="loading" message="Loading..." />}
       {isError && (
-        <AlertMessage type="error" message={error?.response?.data?.message ||
-      error?.message ||
-      "An error occurred"} />
+        <AlertMessage
+          type="error"
+          message={
+            error?.response?.data?.message || error?.message || "An error occurred"
+          }
+        />
       )}
-      {isSuccess && (
-        <AlertMessage type="success" message="Registration success" />
-      )}
+      {isSuccess && <AlertMessage type="success" message="Registration success" />}
+
       <p className="text-sm text-center text-gray-500">
         Join our community now!
       </p>
 
-      {/* Input Field - Username */}
-      <div className="relative">
+      {/* Username */}
+      <div className="relative dark:bg-gray-800 dark:text-white">
         <FaUser className="absolute top-3 left-3 text-gray-400" />
         <input
-          id="username"
           type="text"
-          {...formik.getFieldProps("username")}
+          name="username"
+          value={formData.username}
+          onChange={handleChange}
+          onBlur={handleBlur}
           placeholder="Username"
-          className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+          className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
         />
-        {formik.touched.username && formik.errors.username && (
-          <span className="text-xs text-red-500">{formik.errors.username}</span>
+        {touched.username && errors.username && (
+          <span className="text-xs text-red-500">{errors.username}</span>
         )}
       </div>
 
-      {/* Input Field - Email */}
-      <div className="relative">
+      {/* Email */}
+      <div className="relative dark:bg-gray-800 dark:text-white">
         <FaEnvelope className="absolute top-3 left-3 text-gray-400" />
         <input
-          id="email"
           type="email"
-          {...formik.getFieldProps("email")}
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          onBlur={handleBlur}
           placeholder="Email"
-          className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+          className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
         />
-        {formik.touched.email && formik.errors.email && (
-          <span className="text-xs text-red-500">{formik.errors.email}</span>
+        {touched.email && errors.email && (
+          <span className="text-xs text-red-500">{errors.email}</span>
         )}
       </div>
 
-      {/* Input Field - Password */}
-      <div className="relative">
+      {/* Password */}
+      <div className="relative dark:bg-gray-800 dark:text-white">
         <FaLock className="absolute top-3 left-3 text-gray-400" />
         <input
-          id="password"
           type="password"
-          {...formik.getFieldProps("password")}
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          onBlur={handleBlur}
           placeholder="Password"
-          className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+          className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
         />
-        {formik.touched.password && formik.errors.password && (
-          <span className="text-xs text-red-500">{formik.errors.password}</span>
+        {touched.password && errors.password && (
+          <span className="text-xs text-red-500">{errors.password}</span>
         )}
       </div>
 
-      {/* Input Field - Confirm Password */}
-      <div className="relative">
+      {/* Confirm Password */}
+      <div className="relative dark:bg-gray-800 dark:text-white">
         <FaLock className="absolute top-3 left-3 text-gray-400" />
         <input
-          id="confirmPassword"
           type="password"
-          {...formik.getFieldProps("confirmPassword")}
+          name="confirmPassword"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          onBlur={handleBlur}
           placeholder="Confirm Password"
-          className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+          className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
         />
-        {formik.touched.confirmPassword && formik.errors.confirmPassword && (
-          <span className="text-xs text-red-500">
-            {formik.errors.confirmPassword}
-          </span>
+        {touched.confirmPassword && errors.confirmPassword && (
+          <span className="text-xs text-red-500">{errors.confirmPassword}</span>
         )}
       </div>
 
-      {/* Submit Button */}
       <button
         type="submit"
-        className="w-full bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition duration-150 ease-in-out"
+        className="w-full bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 text-white font-bold py-2 px-4 rounded-md transition duration-150"
       >
         Register
       </button>

@@ -1,16 +1,17 @@
 import { Fragment } from "react";
-import { Disclosure, Menu, Transition } from "@headlessui/react";
-import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Disclosure } from "@headlessui/react";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { SiAuthy } from "react-icons/si";
 import { RiLoginCircleLine } from "react-icons/ri";
-import { FaRegUser } from "react-icons/fa";
-import { PlusIcon } from "@heroicons/react/20/solid";
+import { FaRegUser, FaMoon, FaSun } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import { FaBlog } from "react-icons/fa";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function PublicNavbar() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
-    <Disclosure as="nav" className="bg-white shadow">
+    <Disclosure as="nav" className="bg-white shadow dark:bg-gray-800 dark:text-white">
       {({ open }) => (
         <>
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -61,19 +62,23 @@ export default function PublicNavbar() {
                     Login
                   </Link>
                 </div>
+                {/* Theme toggle for desktop */}
                 <div className="hidden md:ml-4 md:flex md:flex-shrink-0 md:items-center">
                   <button
                     type="button"
-                    className="relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    onClick={toggleTheme}
+                    className="relative rounded-full bg-white p-1 text-yellow-500 hover:text-yellow-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                   >
                     <span className="absolute -inset-1.5" />
+                    {theme === "dark" ? <FaSun /> : <FaMoon />}
                   </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <Disclosure.Panel className="md:hidden">
+          {/* Mobile menu */}
+          <Disclosure.Panel className="md:hidden ">
             <div className="space-y-1 pb-3 pt-2">
               <Link to="/">
                 <Disclosure.Button
@@ -83,7 +88,6 @@ export default function PublicNavbar() {
                   BudgetlyTracker
                 </Disclosure.Button>
               </Link>
-
               <Link to="/register">
                 <Disclosure.Button
                   as="button"
@@ -100,6 +104,15 @@ export default function PublicNavbar() {
                   Login
                 </Disclosure.Button>
               </Link>
+              {/* Theme toggle for mobile */}
+              <button
+                onClick={toggleTheme}
+                className="w-full flex items-center gap-x-2 mt-2 text-yellow-500 hover:text-yellow-600 px-3 py-2 rounded-md"
+                type="button"
+              >
+                {theme === "dark" ? <FaSun /> : <FaMoon />}
+                <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+              </button>
             </div>
           </Disclosure.Panel>
         </>

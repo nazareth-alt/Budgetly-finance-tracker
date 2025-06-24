@@ -74,11 +74,11 @@ const TransactionChart = () => {
     cutout: "70%",
   };
   return (
-    <div className="my-8 p-6 bg-white rounded-lg shadow-xl border border-gray-200">
-      <h1 className="text-2xl font-bold text-center mb-6">
+    <div className="bg-white p-4 rounded-lg shadow h-full w-full flex flex-col justify-between">
+      <h1 className="text-lg font-semibold mb-3 text-gray-800 text-center">
         Transaction Overview
       </h1>
-      <div style={{ height: "350px" }}>
+      <div className="h-72">
         <Doughnut data={data} options={options} />
       </div>
     </div>

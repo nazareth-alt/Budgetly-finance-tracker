@@ -6,6 +6,7 @@ const transactionController = {
   //!add
   create: asyncHandler(async (req, res) => {
     const { type, category, amount, date, description } = req.body;
+    console.log("Received date:", date);
     if (!amount || !type || !date) {
       throw new Error("Type, amount and date are required");
     }
@@ -16,6 +17,7 @@ const transactionController = {
       category,
       amount,
       description,
+      date,
     });
     res.status(201).json(transaction);
   }),
@@ -23,15 +25,15 @@ const transactionController = {
   //!lists
   getFilteredTransactions: asyncHandler(async (req, res) => {
     const { startDate, endDate, type, category } = req.query;
-    let filters = { user: req.user };
+    let filters = { user: req.user._id };
 
     if (startDate) {
       filters.date = { ...filters.date, $gte: new Date(startDate) };
     }
     if (endDate) {
       filters.date = { ...filters.date, $lte: new Date(endDate) };
-    } 
-    if (type) { 
+    }
+    if (type) {
       filters.type = type;
     }
     if (category) {
@@ -44,7 +46,7 @@ const transactionController = {
         filters.category = category;
       }
     }
-    const transactions = await Transaction.find(filters).sort({date:-1});
+    const transactions = await Transaction.find(filters).sort({ date: -1 });
     res.json(transactions);
   }),
 
@@ -64,6 +66,13 @@ const transactionController = {
       res.json(updatedTransaction);
     }
   }),
+  getOne: asyncHandler(async (req, res) => {
+    const transaction = await Transaction.findById(req.params.id);
+    if (!transaction) {
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+    res.json(transaction);
+  }),
   //! delete
   delete: asyncHandler(async (req, res) => {
     //! Find the transaction
@@ -75,4 +84,4 @@ const transactionController = {
   }),
 };
 
-module.exports = transactionController; 
+module.exports = transactionController;

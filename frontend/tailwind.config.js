@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./src/**/*.{html,js,jsx,ts,tsx}"],
+  darkMode: 'class', 
   theme: {
     extend: {
       fontFamily: {
@@ -8,9 +9,9 @@ export default {
       },
       colors: {
         purple: "#ad9ac7",
-        nudepink: "#f5e1e6", // Example soft nude pink, adjust as needed
+        nudepink: "#f5e1e6",
       },
     },
   },
   plugins: [],
-}
+};

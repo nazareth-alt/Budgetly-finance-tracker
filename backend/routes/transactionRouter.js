@@ -23,6 +23,13 @@ transactionRouter.put(
   isAuthenticated,
   transactionController.update
 );
+//! get single transaction by ID
+transactionRouter.get(
+  "/api/v1/transactions/:id",
+  isAuthenticated,
+  transactionController.getOne
+);
+
 //! delete
 transactionRouter.delete(
   "/api/v1/transactions/delete/:id",

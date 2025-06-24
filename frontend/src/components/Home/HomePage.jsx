@@ -79,12 +79,12 @@ const HeroSection = () => {
         </div>
       </div>
       {/* Testimonials */}
-      <div className="bg-gray-100 py-20 px-4">
+      <div className="bg-gray-100 py-20 px-4 dark:bg-gray-800 dark:text-white">
         <h2 className="text-3xl font-bold text-center text-gray-800">
           What Our Users Say
         </h2>
         <div className="mt-10 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
+          <div className="bg-white p-6 rounded-lg shadow-lg dark:bg-gray-800 dark:text-white">
             <FaQuoteLeft className="text-xl text-gray-400" />
             <p className="mt-4">
               "This app has revolutionized the way I track my expenses. Highly
@@ -92,7 +92,7 @@ const HeroSection = () => {
             </p>
             <p className="mt-4 font-bold">- Jane Doe</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-lg">
+          <div className="bg-white p-6 rounded-lg shadow-lg dark:bg-gray-800 dark:text-white">
             <FaQuoteLeft className="text-xl text-gray-400" />
             <p className="mt-4">
               "Finally, a hassle-free way to manage my finances. The insights

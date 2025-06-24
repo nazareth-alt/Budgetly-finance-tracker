@@ -5,6 +5,7 @@ const userRouter = require("./routes/userRouter");
 const errorHandler = require("./middlewares/errorHandlerMiddleware");
 const categoryRouter = require("./routes/categoryRouter");
 const transactionRouter = require("./routes/transactionRouter");
+const investmentTipsRouter = require("./routes/investmentTipsRouter");
 const app = express();
 
 // //!Connect to mongodb
@@ -15,19 +16,20 @@ mongoose
 
 // //! Cors config
 const corsOptions = {
-  origin: ["http://localhost:5173"],
+  origin: ["http://localhost:5173", "http://localhost:5174"],
 };
-app.use(cors(corsOptions));
+app.use(cors());
 // //!Middlewares
 app.use(express.json()); //?Pass incoming json data
 
 // app.get("/", (req, res) => {
 //   res.send("API is working!");
-// });
+// }); 
 // //!Routes
 app.use("/", userRouter);
 app.use("/", categoryRouter);
 app.use("/", transactionRouter);
+app.use("/", investmentTipsRouter);
 //! Error
 app.use(errorHandler);
 

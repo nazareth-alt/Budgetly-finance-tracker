@@ -1,7 +1,5 @@
-import React from "react";
-import { useFormik } from "formik";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import * as Yup from "yup";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   FaDollarSign,
@@ -14,24 +12,25 @@ import { listCategoriesAPI } from "../../services/category/categoryService";
 import { addTransactionAPI } from "../../services/transactions/transactionService";
 import AlertMessage from "../Alert/AlertMessage";
 import { addTransaction } from "../../redux/slice/transactionSlice";
-
-const validationSchema = Yup.object({
-  type: Yup.string()
-    .required("Transaction type is required")
-    .oneOf(["income", "expense"]),
-  amount: Yup.number()
-    .required("Amount is required")
-    .positive("Amount must be positive"),
-  category: Yup.string().required("Category is required"),
-  date: Yup.date().required("Date is required"),
-  description: Yup.string(),
-});
+import Swal from "sweetalert2";
+import { fetchTransactionsAPI } from "../../services/transactions/transactionService";
+import { setTransactions } from "../../redux/slice/transactionSlice";
 
 const TransactionForm = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // Mutation for adding a transaction
+  const [formData, setFormData] = useState({
+    type: "",
+    amount: "",
+    category: "",
+    date: "",
+    description: "",
+  });
+
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
   const {
     mutateAsync,
     isPending,
@@ -43,35 +42,71 @@ const TransactionForm = () => {
     mutationKey: ["add-transaction"],
   });
 
-  // Fetch categories for the select dropdown
-  const { data, isError, isLoading, error } = useQuery({
+  const {
+    data: categories,
+    isError,
+    isLoading,
+    error,
+  } = useQuery({
     queryFn: listCategoriesAPI,
     queryKey: ["list-categories"],
   });
 
-  const formik = useFormik({
-    initialValues: {
-      type: "",
-      amount: "",
-      category: "",
-      date: "",
-      description: "",
-    },
-    validationSchema,
-    onSubmit: (values, { resetForm }) => {
-      mutateAsync(values)
-        .then((data) => {
-          dispatch(addTransaction(data));
-          resetForm();
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.type) newErrors.type = "Transaction type is required";
+    if (!formData.amount || formData.amount <= 0)
+      newErrors.amount = "Amount must be a positive number";
+    if (!formData.category) newErrors.category = "Category is required";
+    if (!formData.date) newErrors.date = "Date is required";
+    return newErrors;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
+    try {
+      const result = await mutateAsync(formData);
+      dispatch(addTransaction(result));
+      // Refetch all transactions and update Redux
+      const allTransactions = await fetchTransactionsAPI();
+      dispatch(setTransactions(allTransactions));
+
+      // ✅ Show confirmation alert
+      Swal.fire({
+        title: "Success!",
+        text: "Transaction added successfully. Go to dashboard?",
+        icon: "success",
+        showCancelButton: true,
+        confirmButtonColor: "#00B495",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Yes, go!",
+      }).then((res) => {
+        if (res.isConfirmed) {
           navigate("/dashboard");
-        })
-        .catch((e) => console.log(e));
-    },
-  });
+        }
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   return (
     <form
-      onSubmit={formik.handleSubmit}
+      onSubmit={handleSubmit}
       className="max-w-lg mx-auto my-10 bg-white p-6 rounded-lg shadow-lg space-y-6"
     >
       <div className="text-center">
@@ -84,123 +119,116 @@ const TransactionForm = () => {
       {isError && (
         <AlertMessage
           type="error"
-          message={
-            error?.response?.data?.message ||
-            "Something happened please try again later"
-          }
+          message={error?.response?.data?.message || "Something went wrong"}
         />
       )}
       {isSuccess && (
         <AlertMessage type="success" message="Transaction added successfully" />
       )}
 
-      {/* Transaction Type Field */}
-      <div className="space-y-2">
-        <label
-          htmlFor="type"
-          className="flex gap-2 items-center text-gray-700 font-medium"
-        >
+      {/* Type */}
+      <div>
+        <label className="flex items-center gap-2 text-gray-700 font-medium">
           <FaWallet className="text-blue-500" />
-          <span>Type</span>
+          Type
         </label>
         <select
-          {...formik.getFieldProps("type")}
-          id="type"
-          className="block w-full p-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+          name="type"
+          value={formData.type}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          className="w-full border mt-1 rounded-md p-2 dark:bg-gray-800 dark:text-white"
         >
           <option value="">Select transaction type</option>
           <option value="income">Income</option>
           <option value="expense">Expense</option>
         </select>
-        {formik.touched.type && formik.errors.type && (
-          <p className="text-red-500 text-xs">{formik.errors.type}</p>
+        {touched.type && errors.type && (
+          <p className="text-red-500 text-xs">{errors.type}</p>
         )}
       </div>
 
-      {/* Amount Field */}
-      <div className="flex flex-col space-y-1">
-        <label htmlFor="amount" className="text-gray-700 font-medium">
+      {/* Amount */}
+      <div>
+        <label className="text-gray-700 font-medium">
           <FaDollarSign className="inline mr-2 text-blue-500" />
           Amount
         </label>
         <input
           type="number"
-          {...formik.getFieldProps("amount")}
-          id="amount"
-          placeholder="Amount"
-          className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+          name="amount"
+          value={formData.amount}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          className="w-full mt-1 border rounded-md p-2 dark:bg-gray-800 dark:text-white"
         />
-        {formik.touched.amount && formik.errors.amount && (
-          <p className="text-red-500 text-xs italic">{formik.errors.amount}</p>
+        {touched.amount && errors.amount && (
+          <p className="text-red-500 text-xs">{errors.amount}</p>
         )}
       </div>
 
-      {/* Category Field */}
-      <div className="flex flex-col space-y-1">
-        <label htmlFor="category" className="text-gray-700 font-medium">
+      {/* Category */}
+      <div>
+        <label className="text-gray-700 font-medium">
           <FaRegCommentDots className="inline mr-2 text-blue-500" />
           Category
         </label>
         <select
-          {...formik.getFieldProps("category")}
-          id="category"
-          className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+          name="category"
+          value={formData.category}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          className="w-full mt-1 border rounded-md p-2 dark:bg-gray-800 dark:text-white"
         >
           <option value="">Select a category</option>
-          {data?.map((category) => (
-            <option key={category?._id} value={category?.name}>
-              {category?.name}
+          {categories?.map((c) => (
+            <option key={c._id} value={c.name}>
+              {c.name}
             </option>
           ))}
         </select>
-        {formik.touched.category && formik.errors.category && (
-          <p className="text-red-500 text-xs italic">
-            {formik.errors.category}
-          </p>
+        {touched.category && errors.category && (
+          <p className="text-red-500 text-xs">{errors.category}</p>
         )}
       </div>
 
-      {/* Date Field */}
-      <div className="flex flex-col space-y-1">
-        <label htmlFor="date" className="text-gray-700 font-medium">
+      {/* Date */}
+      <div>
+        <label className="text-gray-700 font-medium">
           <FaCalendarAlt className="inline mr-2 text-blue-500" />
           Date
         </label>
         <input
           type="date"
-          {...formik.getFieldProps("date")}
-          id="date"
-          className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+          name="date"
+          value={formData.date}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          className="w-full mt-1 border rounded-md p-2 dark:bg-gray-800 dark:text-white"
         />
-        {formik.touched.date && formik.errors.date && (
-          <p className="text-red-500 text-xs italic">{formik.errors.date}</p>
+        {touched.date && errors.date && (
+          <p className="text-red-500 text-xs">{errors.date}</p>
         )}
       </div>
 
-      {/* Description Field */}
-      <div className="flex flex-col space-y-1">
-        <label htmlFor="description" className="text-gray-700 font-medium">
+      {/* Description */}
+      <div>
+        <label className="text-gray-700 font-medium">
           <FaRegCommentDots className="inline mr-2 text-blue-500" />
           Description (Optional)
         </label>
         <textarea
-          {...formik.getFieldProps("description")}
-          id="description"
-          placeholder="Description"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
           rows="3"
-          className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-        ></textarea>
-        {formik.touched.description && formik.errors.description && (
-          <p className="text-red-500 text-xs italic">
-            {formik.errors.description}
-          </p>
-        )}
+          className="w-full mt-1 border rounded-md p-2 dark:bg-gray-800 dark:text-white"
+        />
       </div>
 
-      {/* Submit Button */}
       <button
         type="submit"
-        className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors duration-200"
+        className="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition"
       >
         Submit Transaction
       </button>

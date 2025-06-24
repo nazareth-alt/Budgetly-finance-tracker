@@ -1,13 +1,14 @@
 // components/RevenueChart.jsx
 import React from "react";
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 import { useSelector } from "react-redux";
 
@@ -15,8 +16,6 @@ import { useSelector } from "react-redux";
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
-    const total = (data.income || 0) + (data.expense || 0);
-
     return (
       <div className="bg-white p-3 border border-gray-300 rounded shadow-md text-sm">
         <p className="font-semibold text-gray-700">{label}</p>
@@ -31,48 +30,67 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const RevenueChart = () => {
   const transactions = useSelector((state) => state.transactions.items);
-  
 
-
-  const monthlyData = {};
-
+  // 1. Extract & sort months
+  const monthSet = new Set();
   transactions.forEach((t) => {
     const date = new Date(t.date);
     const month = date.toLocaleString("default", { month: "short", year: "numeric" });
+    monthSet.add(month);
+  });
 
-    if (!monthlyData[month]) {
-      monthlyData[month] = { month, income: 0, expense: 0, count: 0 };
+  const months = Array.from(monthSet).sort((a, b) => {
+    const aDate = new Date(a);
+    const bDate = new Date(b);
+    return aDate - bDate;
+  });
+
+  // 2. Init data
+  const monthlyData = {};
+  months.forEach((month) => {
+    monthlyData[month] = { month, income: 0, expense: 0, count: 0 };
+  });
+
+  // 3. Fill actual data
+  transactions.forEach((t) => {
+    const date = new Date(t.date);
+    const month = date.toLocaleString("default", { month: "short", year: "numeric" });
+    if (monthlyData[month]) {
+      if (t.type === "income") {
+        monthlyData[month].income += t.amount;
+      } else if (t.type === "expense") {
+        monthlyData[month].expense += t.amount;
+      }
+      monthlyData[month].count += 1;
     }
-
-    if (t.type === "income") {
-      monthlyData[month].income += t.amount;
-    } else if (t.type === "expense") {
-      monthlyData[month].expense += t.amount;
-    }
-
-    monthlyData[month].count += 1;
   });
 
   const chartData = Object.values(monthlyData);
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow mb-6">
-      <h2 className="text-lg font-semibold mb-3 text-gray-800">Monthly Revenue</h2>
-      <ResponsiveContainer width="100%" height={220}>
-        <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="month" />
-          <YAxis />
-          <Tooltip content={<CustomTooltip />} />
-          <Line type="monotone" dataKey="income" stroke="#00B495" name="Income" />
-          <Line type="monotone" dataKey="expense" stroke="#FF5A5F" name="Expense" />
-        </LineChart>
-      </ResponsiveContainer>
+    <div className="bg-white p-4 rounded-lg shadow h-full w-full flex flex-col justify-between">
+      <h2 className="text-lg font-semibold mb-3 text-gray-800">
+        Monthly Revenue
+      </h2>
+      <div className="h-72">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chartData}
+            margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            <Bar dataKey="income" fill="#00B495" name="Income" />
+            <Bar dataKey="expense" fill="#FF5A5F" name="Expense" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };
 
 export default RevenueChart;
-
-
 
